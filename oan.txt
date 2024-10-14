@@ -1,0 +1,103 @@
+---------OSPF------------
+//assign ip to interface 
+int g0/0
+ip add 192.168.1.1 255.255.255.0
+no shut 
+
+//loopback
+interface loopback 1
+ip add 1.1.1.1 255.255.255.255
+end
+
+route ospf 1
+net 192.168.2.0 0.0.0.255 area 0
+net 192.168.3.0 0.0.0.255 area 1
+net 1.1.1.1 0.0.0.0 area 1
+
+//add passive interface
+passive interface int g0/0
+passive interface l01
+
+//verify ospf neighbor
+show ip ospf neighbor
+
+//verify ospf database
+show ip ospf database
+do sh io ospf 
+
+
+-----------------ACL---------------------
+
+//create standard ACL 
+ip access-list standard to_192.168.3.0/24(only pc5 pc6 access)
+permit 192.168.3.0 0.0.0.255
+deny any
+
+//add outbound
+int g0/0
+ip access-group 192.168.3.0/24 out
+
+//verify each entires
+show access-lists <ACL_Number>
+
+//print access list
+do show access-lists
+
+
+ip access-list standard to_192.168.3.0/24(only pc5 pc6 access)
+deny 192.168.3.0 0.0.0.255 (cant access)
+permit any
+
+//add outbound
+int g0/0
+ip access-group 192.168.3.0/24 out
+
+-----------------------------------------------------
+
+//create Extended ACL
+ip access-list extended 100
+deny ip 172.16.2.0 0.0.0.255 host 192.168.2.100
+permit ip any any
+
+//add outbound
+int g0/0 
+ip access-group 100 in
+
+//deny services
+ip access-list extended 101
+deny ip 172.16.1.0 0.0.0.255 host 192.168.2.50
+deny tcp 172.16.1.0 0.0.0.255 host 192.168.2.50 eq 53
+deny udp 172.16.1.0 0.0.0.255 host 192.168.2.50 eq 53
+
+     --- port numbers (http : 80)(https: 443) ---
+
+
+-----------------NAT---------------------
+
+//static
+
+int g0/1
+ip nat inside
+
+int g0/0
+ip nat outside
+ex
+
+ip nat inside source static 172.16.1.1 100.0.0.1
+do dh ip nat tra
+
+
+//dynamic
+access-list 1 permit 172.16.2.0 255.255.255.0
+ip nat pool POOL1 200.0.0.1 200.0.0.10 netmask 255.255.255.0 
+ip nat inside source list 1 pool POOL1 
+do sh ip nat tran
+
+//çlear translation
+do clear ip nat tra *
+
+
+
+
+
+
